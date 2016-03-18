@@ -3,7 +3,7 @@
 ####################  THIS SCRIPT WILL INSTALL THE JAVA IN LINUX MACHINE WHEN EXECUTED 
 
 ###REQUIRED VAIRABLES 
-installPath="/tmp/local/java"
+installPath="/usr/local/java"
 jdkVer=""
 sourceFile=$1
 
@@ -53,6 +53,40 @@ function getJdkVer() {
 }
 
 
+######################### WRITING CHANGES IN CONFIGURATION FILE /etc/profile #################################
+
+function editFile() {
+
+	configFile="/etc/profile"
+
+	echo "################ Changes done by the jdk installing Script ######################################" >> $configFile
+	echo "JAVA_HOME=$installPath/$jdkVer"		 >> $configFile
+	echo 'JRE_HOME=$JAVA_HOME/jre'		 	 >> $configFile
+	echo 'PATH=$PATH:$JAVA_HOME/bin:$JRE_HOME/bin' 	 >> $configFile
+	echo "export JAVA_HOME"				 >> $configFile
+	echo "export JRE_HOME"				 >> $configFile
+	echo "export PATH"				 >> $configFile
+}
+
+##################### Informs your system where the java is installed in the system ##########################
+
+function informLocation() {
+
+	sudo update-alternatives --install "/usr/bin/java" "java" "$installPath/$jdkVer/jre/bin/java" 1
+	sudo update-alternatives --install "/usr/bin/java" "java" "$installPath/$jdkVer/bin/java" 1
+	sudo update-alternatives --install "/usr/bin/javac" "javac" "$installPath/$jdkVer/bin/javac" 1
+	sudo update-alternatives --install "/usr/bin/javaws" "javaws" "$installPath/$jdkVer/bin/javaws" 1
+}
+
+########################## THIS FUNCTION WILL MAKE THE JAVA DEFAULT ##############
+function makeDefault() {
+
+	 echo "Making java default"
+        update-alternatives --set java "$installPath/$jdkVer/jre/bin/java"
+        update-alternatives --set javac "$installPath/$jdkVer/bin/javac"
+        update-alternatives --set javaws "$installPath/$jdkVer/bin/javaws"
+
+}
 ######################### THIS WILL BEGIN TO WRITE CHANGES ON THE SYSTEM ######################################
 
 function begin() {
@@ -66,8 +100,34 @@ function begin() {
 
 	getJdkVer
 	
-	###EDITING PROFILE REMAINING
-	###ACKNOWLEDGING THE SYSTEM OF THE CURRENT JAVA 	
+	###EDITING PROFILE CONFIG FILE
+	
+	echo "editing /etc/profile"
+	editFile
+
+	
+	###Inform  Ubuntu Linux system where your Oracle Java JDK/JRE is Instaled
+	
+	echo "Informing the location of the jdk path to the system"
+	informLocation
+
+
+
+
+	#### MAING JAVA  DEFAULT  ##################
+	makeDefault
+	source /etc/profile
+ 
+	if (( $(isJavaInstalled) == "true" ))
+	then
+		echo "java installed successfully"
+		sleep 1
+		java -version
+	else
+		echo "java failed to install"
+	
+	fi	
+	  	
 }
 
 
@@ -76,13 +136,13 @@ function begin() {
 echo -e "CHECKING THE SYSTEM!!!"
 sleep 1
 
-if(( $(isJavaInstalled) == "true" ))
+if (( $(isJavaInstalled) == "true" ))
 then
 	echo "Java Found. Do you want to replace current one?[Y/N]:"
 	read choice
 	echo "choice is $choice"
 
-	if(( ${choice} == "Y" ))
+	if (( ${choice} == "Y" ))
 	then 
 		echo "removing the current java"	
 		apt-get purge openjdk-\*
